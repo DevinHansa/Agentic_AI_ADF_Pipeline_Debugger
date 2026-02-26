@@ -1,253 +1,203 @@
-# 🔧 ADF Pipeline Debugger
+# 🔧 Agentic AI ADF Pipeline Debugger
 
-**AI-powered Azure Data Factory pipeline failure diagnostics** — automatically detects, analyzes, and reports pipeline failures with human-friendly explanations, root cause analysis, and step-by-step solutions.
+[![Python 3.12](https://img.shields.io/badge/Python-3.12-blue.svg)](https://www.python.org/downloads/release/python-3120/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
+[![Azure Data Factory](https://img.shields.io/badge/Azure-Data_Factory-0089D6?logo=microsoft-azure)](https://azure.microsoft.com/en-us/products/data-factory/)
+[![Gemini AI](https://img.shields.io/badge/AI-Google_Gemini-FF9900)](https://deepmind.google/technologies/gemini/)
 
-> 🚀 Built for data engineers who are tired of being woken at 3 AM with "pipeline failed, check logs."
+**An enterprise-grade, AI-powered diagnostic and observability system for Azure Data Factory (ADF).**
+
+This system automatically monitors, detects, analyzes, and explains ADF pipeline failures, delivering human-centric observability to data engineering teams. Rather than reacting to obscure JSON error codes in the middle of the night, teams receive comprehensive, fact-checked root cause analyses with actionable remediation steps.
 
 ---
 
-## ✨ Features
+## ✨ Enterprise Features
 
-| Feature | Description |
-|---------|-------------|
-| 🤖 **AI Error Analysis** | Gemini AI provides human-friendly error explanations and root cause analysis |
-| 🧠 **Vector Knowledge Base** | 30+ ADF error patterns with semantic search (ChromaDB + sentence-transformers) |
-| ✅ **Fact-Checking Agent** | Verifies analysis accuracy before sending reports — confidence scoring |
-| 📧 **Smart Email Alerts** | Rich HTML diagnostic emails sent on pipeline failure via Gmail SMTP |
-| 🌐 **Web Dashboard** | Real-time monitoring dashboard hosted on Azure App Service |
-| 📊 **Data Quality Checks** | Automated checks for timing, parameters, and failure patterns |
-| ⚡ **Azure Monitor Alerts** | Real-time failure detection every 5 minutes |
-| 🔍 **CLI Tool** | Command-line interface for on-demand debugging and analysis |
+- 🤖 **Agentic Error Analysis:** Leverages Google's Gemini AI to synthesize complex Azure error codes into human-readable explanations.
+- 🧠 **Semantic Knowledge Base:** Uses ChromaDB and `sentence-transformers` for vector-based retrieval across 30+ historical ADF failure patterns.
+- 🛡️ **Automated Fact-Checking:** A dedicated verification agent guarantees that AI-generated solutions align with official Azure documentation and internal runbooks.
+- 📊 **Real-Time Observability:** A robust web dashboard (Azure App Service) for monitoring pipeline health.
+- ⚡ **Proactive Alerting:** Native Azure Monitor integration polls for failures every 5 minutes and triggers deep diagnostic workflows.
+- 📧 **Actionable HTML Reports:** Rich diagnostic emails localized to your team's context via Gmail SMTP integrations.
+- 🔍 **Data Quality Enforcement:** Automated validations for execution variance, unusual volume spikes, and cyclic failures.
 
 ---
 
 ## 🏗️ Architecture
 
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    Azure Data Factory                        │
-│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐      │
-│  │Pipeline 1│ │Pipeline 2│ │Pipeline 3│ │Pipeline N│      │
-│  └────┬─────┘ └────┬─────┘ └────┬─────┘ └────┬─────┘      │
-│       └─────────┬──┴────────────┴──────────┬──┘            │
-└─────────────────┼──────────────────────────┼───────────────┘
-                  │ Pipeline Failure          │
-                  ▼                          ▼
-┌─────────────────────────┐   ┌─────────────────────────────┐
-│   Azure Monitor Alert   │   │      ADF Debugger CLI       │
-│  (Every 5 min check)    │   │  python cli.py debug <id>   │
-└────────┬────────────────┘   └──────────┬──────────────────┘
-         │                               │
-         ▼                               ▼
-┌────────────────────────────────────────────────────────────┐
-│                   Error Analysis Pipeline                   │
-│                                                            │
-│  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────┐  │
-│  │ Regex KB │→ │Vector KB │→ │Gemini AI │→ │Fact Check│  │
-│  │(16 rules)│  │(30 docs) │  │(Analysis)│  │(Verify)  │  │
-│  └──────────┘  └──────────┘  └──────────┘  └──────────┘  │
-└────────────────────────┬───────────────────────────────────┘
-                         │
-         ┌───────────────┼───────────────┐
-         ▼               ▼               ▼
-┌──────────────┐ ┌──────────────┐ ┌──────────────┐
-│  HTML Email  │ │  Dashboard   │ │  CLI Report  │
-│  (Gmail)     │ │  (Azure App) │ │  (Terminal)  │
-└──────────────┘ └──────────────┘ └──────────────┘
+```mermaid
+graph TD
+    subgraph "Azure Environment"
+        ADF[Azure Data Factory] --> |Failure Event| AM[Azure Monitor]
+        AM --> |Webhook Alert| Func[Azure Function App]
+    end
+
+    subgraph "Agentic Diagnostic Engine"
+        Func --> CLI[ADF Debugger Core]
+        CLI --> Analyzer[Error Analysis Pipeline]
+        
+        Analyzer --> |1. Pattern Match| KB1[(Regex KB)]
+        Analyzer --> |2. Semantic Match| KB2[(Vector KB - ChromaDB)]
+        Analyzer --> |3. Synthesize| LLM[Gemini AI]
+        Analyzer --> |4. Verify| FactCheck[Fact-checker Node]
+    end
+
+    subgraph "Presentation Layer"
+        FactCheck --> Dash[Web Dashboard]
+        FactCheck --> Email[HTML Email Report]
+        FactCheck --> Console[CLI / Terminal]
+    end
 ```
 
-### Analysis Pipeline
-
-1. **Regex KB** — Pattern matches against 16 known error rules
-2. **Vector KB** — Semantic search across 30 Azure-documented error patterns using ChromaDB
-3. **Gemini AI** — Deep AI analysis with context-aware solutions
-4. **Fact-Checker** — Cross-references AI output against KB for accuracy verification
+### The Analytical Workflow
+1. **Detection:** Azure Function triggers on ADF failure alerts.
+2. **Retrieval:** Extracts pipeline logs and compares them against Regex and Vector Knowledge Bases.
+3. **Generation:** Gemini AI synthesizes a root-cause explanation.
+4. **Verification:** The Fact-Checking node cross-references the AI's claim against the KB to mitigate hallucinations.
+5. **Distribution:** Formats and routes the report to engineers.
 
 ---
 
-## 📂 Project Structure
-
-```
-ADF_Pipeline_Debugger/
-├── adf_debugger/                # Core modules
-│   ├── adf_client.py            # Azure SDK wrapper for ADF
-│   ├── error_analyzer.py        # AI analysis pipeline
-│   ├── vector_knowledge_base.py # ChromaDB semantic search (30 patterns)
-│   ├── knowledge_base.py        # Regex-based pattern matching (16 rules)
-│   ├── fact_checker.py          # AI fact-checking agent
-│   ├── data_quality.py          # Data quality checks
-│   ├── report_builder.py        # HTML/text report generation
-│   ├── notification.py          # Gmail SMTP email service
-│   └── utils.py                 # Helper utilities
-├── knowledge/                   # Knowledge base data
-│   ├── common_errors.json       # 16 regex error patterns
-│   ├── runbooks.json            # 10 step-by-step troubleshooting guides
-│   └── chromadb/                # Vector DB storage (auto-generated)
-├── templates/
-│   └── diagnostic_email.html    # Dark-themed HTML email template
-├── azure_function/              # Azure Function App code
-│   ├── function_app.py          # Alert webhook + timer trigger
-│   ├── host.json                # Function host config
-│   └── requirements.txt         # Function dependencies
-├── test_pipelines/              # ADF test pipeline definitions
-├── tests/                       # Test fixtures & mock data
-├── cli.py                       # Command-line interface
-├── dashboard.py                 # Flask web dashboard
-├── config.py                    # Configuration loader
-├── requirements.txt             # Python dependencies
-└── .env.example                 # Environment variable template
-```
-
----
-
-## 🚀 Quick Start
+## 🚀 Getting Started
 
 ### Prerequisites
-- Python 3.12+
-- Azure subscription with ADF instance
-- Gemini API key
-- Gmail account with App Password
 
-### 1. Clone & Install
+Ensure you have the following before cloning the repository:
+- **Python 3.12+**
+- Active **Azure Subscription** with an existing Azure Data Factory instance.
+- **Service Principal** with `Data Factory Contributor` or `Reader` access.
+- **Google Gemini API Key**.
+- Standard **Gmail Account** (with App Passwords enabled for SMTP).
+
+### 1. Installation
+
+Clone the repository and install the dependencies:
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/ADF_Pipeline_Debugger.git
-cd ADF_Pipeline_Debugger
+git clone https://github.com/DevinHansa/Agentic_AI_ADF_Pipeline_Debugger.git
+cd Agentic_AI_ADF_Pipeline_Debugger
+
+# Create and activate a virtual environment (recommended)
+python -m venv venv
+source venv/bin/activate  # On Windows use `venv\Scripts\activate`
+
+# Install requirements
 pip install -r requirements.txt
 ```
 
-### 2. Configure Environment
+### 2. Configuration
+
+Create a local environment file and populate it with your specific credentials:
 
 ```bash
 cp .env.example .env
-# Edit .env with your credentials
 ```
 
-Required environment variables:
+**Required `environment` variables:**
+
 | Variable | Description |
 |----------|-------------|
-| `AZURE_SUBSCRIPTION_ID` | Azure subscription ID |
-| `AZURE_RESOURCE_GROUP` | Resource group name |
-| `AZURE_DATA_FACTORY_NAME` | ADF instance name |
-| `AZURE_TENANT_ID` | Azure AD tenant ID |
-| `AZURE_CLIENT_ID` | Service principal client ID |
-| `AZURE_CLIENT_SECRET` | Service principal secret |
-| `GEMINI_API_KEY` | Google Gemini API key |
-| `SMTP_USERNAME` | Gmail address |
-| `SMTP_PASSWORD` | Gmail App Password |
-| `EMAIL_TO` | Recipient email address(es) |
+| `AZURE_SUBSCRIPTION_ID` | Your Azure Subscription ID. |
+| `AZURE_RESOURCE_GROUP` | The Resource Group hosting the ADF instance. |
+| `AZURE_DATA_FACTORY_NAME` | The exact name of your ADF resource. |
+| `AZURE_TENANT_ID` | Your Azure AD Tenant ID. |
+| `AZURE_CLIENT_ID` | Service Principal Client ID. |
+| `AZURE_CLIENT_SECRET` | Service Principal Secret. |
+| `GEMINI_API_KEY` | Your Google Gemini API Key. |
+| `SMTP_USERNAME` | The Gmail address used for sending alerts. |
+| `SMTP_PASSWORD` | The secure App Password for the Gmail account. |
+| `EMAIL_TO` | Comma-separated list of recipient emails. |
 
-### 3. Test Connection
+### 3. Verification
 
+Test the integration to Azure and the AI models:
 ```bash
 python cli.py test-connection
 ```
 
-### 4. Run
+---
+
+## 🛠️ Usage & Operations
+
+The system provides a unified CLI for manual interventions and investigations.
+
+### Common Commands
 
 ```bash
-# Check for pipeline failures
+# Monitor the last 24 hours of pipeline execution
 python cli.py failures --hours 24
 
-# Analyze a specific failure
-python cli.py debug <run-id> --save-html report.html --send-email
+# Perform a deep diagnostic on a specific ADF Run ID
+python cli.py debug <run_id_here> --save-html report.html --send-email
 
-# Launch web dashboard
+# Bring up the interactive Dashboard
 python dashboard.py
 
-# Demo mode (no Azure needed)
+# Run in an isolated Demo Mode (Does not require an active Azure connection)
 python cli.py demo --scenario 0
 ```
 
 ---
 
-## ☁️ Azure Deployment
+## ☁️ Azure Deployment (Production)
 
-### Deployed Resources
+To deploy the solution to Azure for production monitoring:
 
-| Resource | Name | SKU |
-|----------|------|-----|
-| Web App | `adf-debugger-dashboard` | Free (F1) |
-| Function App | `func-adf-debugger` | Basic (B1) |
-| Monitor Alert | `adf-pipeline-failure-alert` | — |
-| Action Group | `adf-debugger-actions` | — |
-| Storage Account | `stadfdebuggersa` | Standard LRS |
-
-### Deploy Dashboard
-
+### 1. Web Dashboard (Azure App Service)
+Deploy the Flask-based dashboard:
 ```bash
 az webapp up --name adf-debugger-dashboard \
   --resource-group rg-adf-mads-mvp \
   --runtime "PYTHON:3.12"
 ```
 
-### Configure App Settings
-
+Configure application settings for the App Service:
 ```bash
 az webapp config appsettings set --name adf-debugger-dashboard \
   --resource-group rg-adf-mads-mvp \
-  --settings AZURE_SUBSCRIPTION_ID="..." GEMINI_API_KEY="..." ...
+  --settings AZURE_SUBSCRIPTION_ID="..." GEMINI_API_KEY="..." # Include all .env vars
+```
+
+### 2. Azure Function Alert Webhook
+Deploy the Azure Function (found in the `azure_function` directory) to act as the webhook target for Azure Monitor alerts.
+
+---
+
+## 🧪 Testing
+
+We provide pre-defined, fault-injected pipeline templates to test the system's analytical capabilities safely.
+
+| Pipeline Definition | Purpose | Expected Fault Detection |
+|---------------------|---------|--------------------------|
+| `pl_sales_ingest_fail_404` | Simulates a missing blob trigger | `PathNotFound` (ADLS Gen2) |
+| `pl_test_connectivity` | Simulates a networking partition | DNS / Outbound Connection Failure |
+| `pl_test_auth_fail` | Simulates Service Principal expiration | `Unauthorized` Access |
+| `pl_test_timeout` | Simulates slow linked services | HTTP 408 (Timeout) |
+| `pl_test_bad_url` | Simulates an upstream API outage | HTTP 500 (Internal Server Error) |
+
+Run the test suite:
+```bash
+pytest tests/ -v
 ```
 
 ---
 
-## 📧 Email Report Example
+## 🤝 Contribution Guidelines
 
-The diagnostic email includes:
-- ⚠️ Error severity badge (CRITICAL / HIGH / MEDIUM / LOW)
-- 📝 Plain-English error explanation
-- 🔍 Root cause analysis
-- 💡 Step-by-step solutions with estimated fix times
-- 🛡️ Preventive measures
-- 📊 Data quality findings
-- 🔗 Links to Azure documentation
-- ✅ Fact-check confidence score
+This repository follows standard Git Flow protocols. We welcome contributions to enhance the knowledge base or the agentic toolchain.
 
----
+1. Fork the project.
+2. Create your Feature Branch: `git checkout -b feature/AmazingFeature`
+3. Commit your Changes: `git commit -m 'Add some AmazingFeature'`
+4. Push to the Branch: `git push origin feature/AmazingFeature`
+5. Open a Pull Request.
 
-## 🔧 CLI Commands
-
-| Command | Description |
-|---------|-------------|
-| `failures` | List recent pipeline failures |
-| `debug <run-id>` | Full analysis of a specific failure |
-| `history <pipeline>` | Show pipeline run history |
-| `analyze <message>` | Quick analysis of an error message |
-| `demo` | Demo mode with mock data |
-| `test-connection` | Test Azure connectivity |
-| `send-test-email` | Send a test email |
-| `kb-stats` | Knowledge base statistics |
+**Adding new knowledge base patterns:** Register new embeddings in `vector_knowledge_base.py` and test using `python cli.py demo`.
 
 ---
 
-## 🧪 Test Pipelines
+## 📄 License & Legal
 
-The following test pipelines are included for validation:
+Distributed under the MIT License. See `LICENSE` for more information.
 
-| Pipeline | Tests | Expected Error |
-|----------|-------|----------------|
-| `pl_sales_ingest_fail_404` | File not found | PathNotFound on ADLS Gen2 |
-| `pl_test_connectivity` | Bad endpoint | DNS resolution failure |
-| `pl_test_auth_fail` | Auth error | Unauthorized access |
-| `pl_test_timeout` | HTTP 408 | Request timeout |
-| `pl_test_bad_url` | Server error | HTTP 500 response |
-
----
-
-## 📞 Contributing
-
-1. Fork the repository
-2. Create a feature branch: `git checkout -b feature/new-error-pattern`
-3. Add new error patterns to `vector_knowledge_base.py`
-4. Test with: `python cli.py demo`
-5. Submit a pull request
-
----
-
-## 📄 License
-
-MIT License — see [LICENSE](LICENSE) for details.
-
----
-
-**Built with ❤️ for data engineers who deserve better debugging tools.**
+*Note: This project is an independent observability tool and is not officially affiliated with Microsoft Corp.*
