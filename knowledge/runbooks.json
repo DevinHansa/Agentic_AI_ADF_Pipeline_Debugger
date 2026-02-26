@@ -1,0 +1,125 @@
+{
+    "runbooks": {
+        "connectivity": {
+            "title": "Connectivity Issue Runbook",
+            "steps": [
+                "1. Check if the source/destination service is reachable (ping, telnet, or Azure connectivity test)",
+                "2. Verify the Integration Runtime status (go to ADF > Manage > Integration Runtimes)",
+                "3. If using Self-hosted IR: RDP into the machine, check service status, restart if needed",
+                "4. Check firewall rules and Network Security Groups (NSGs)",
+                "5. If using Private Endpoints, verify the private DNS zone configuration",
+                "6. Test the linked service connection in ADF Author mode",
+                "7. Check Azure Service Health for any ongoing incidents",
+                "8. If all else fails, try switching to a different Integration Runtime or region"
+            ]
+        },
+        "authentication": {
+            "title": "Authentication Issue Runbook",
+            "steps": [
+                "1. Go to ADF > Manage > Linked Services > Click on the failing service",
+                "2. Click 'Test Connection' to verify credentials",
+                "3. If using Key Vault: Check the secret value and expiry date",
+                "4. If using Service Principal: Check if the client secret has expired (Azure AD > App Registrations)",
+                "5. If using Managed Identity: Verify MI is enabled and has correct RBAC roles",
+                "6. Update the credentials and re-test the connection",
+                "7. Republish the pipeline if linked service was modified"
+            ]
+        },
+        "data_quality": {
+            "title": "Data Quality Issue Runbook",
+            "steps": [
+                "1. Check the source data for the specific rows/columns causing the error",
+                "2. Compare source schema with ADF dataset schema (ADF > Author > Datasets)",
+                "3. Check for null values, type mismatches, or encoding issues",
+                "4. Review the copy activity's column mapping and type conversion rules",
+                "5. Enable fault tolerance to log and skip bad rows",
+                "6. For recurring issues, add data validation as a pre-processing step",
+                "7. Check if the source system had a schema change or data quality degradation"
+            ]
+        },
+        "timeout": {
+            "title": "Timeout Issue Runbook",
+            "steps": [
+                "1. Check the activity's timeout setting (default varies by activity type)",
+                "2. Review the source query or operation for performance issues",
+                "3. Check database/source system for blocking queries or deadlocks",
+                "4. Monitor the Integration Runtime's CPU and memory usage",
+                "5. Consider implementing incremental/partitioned loading",
+                "6. Increase timeout or add retry logic",
+                "7. Optimize parallel copy settings (DIUs, degree of parallelism)"
+            ]
+        },
+        "resource": {
+            "title": "Resource Issue Runbook",
+            "steps": [
+                "1. Check the Integration Runtime's resource usage (CPU, memory, disk)",
+                "2. For Data Flows: Increase the cluster size or core count",
+                "3. For Databricks: Check cluster logs and scale up if needed",
+                "4. Reduce data volume by adding filters or partitioning",
+                "5. Reduce concurrent activity execution",
+                "6. Check Azure subscription quotas and request increases if needed",
+                "7. Consider using a staging area for large data transfers"
+            ]
+        },
+        "missing_data": {
+            "title": "Missing Data Runbook",
+            "steps": [
+                "1. Verify the source file/data exists at the expected location",
+                "2. Check the resolved path (use ADF Debug mode to see dynamic expression values)",
+                "3. Check upstream pipeline/job completion status",
+                "4. Verify data arrival SLAs with the source team",
+                "5. Add a Validation activity to wait for file availability",
+                "6. Implement a retry mechanism with appropriate delays",
+                "7. Consider adding a dependency on the upstream pipeline trigger"
+            ]
+        },
+        "schema": {
+            "title": "Schema Change Runbook",
+            "steps": [
+                "1. Compare the current source schema with the ADF dataset schema",
+                "2. Import the updated schema in the ADF dataset (Author > Dataset > Import Schema)",
+                "3. Update column mappings in all affected Copy/Data Flow activities",
+                "4. If using Data Flows, check for schema drift settings",
+                "5. Test the updated pipeline in Debug mode",
+                "6. Set up schema monitoring or change detection for the source",
+                "7. Communicate schema changes to all downstream consumers"
+            ]
+        },
+        "configuration": {
+            "title": "Configuration Issue Runbook",
+            "steps": [
+                "1. Review the error message for the specific configuration parameter that failed",
+                "2. Check dynamic expression syntax (ADF > Author > Activity > Expression Builder)",
+                "3. Verify all pipeline parameters have valid default values",
+                "4. Compare configuration with a working environment (dev/staging)",
+                "5. Test the pipeline in Debug mode with explicit parameter values",
+                "6. Check for recent deployments or configuration changes",
+                "7. Review ARM template or CI/CD deployment logs for configuration drift"
+            ]
+        },
+        "permission": {
+            "title": "Permission Issue Runbook",
+            "steps": [
+                "1. Identify the exact resource that returned the permission error",
+                "2. Check the ADF Managed Identity's role assignments on that resource",
+                "3. Grant the minimum required role (principle of least privilege)",
+                "4. For Storage: Grant 'Storage Blob Data Contributor' role",
+                "5. For SQL: Add the ADF MI as a database user with required permissions",
+                "6. For Key Vault: Update access policies or RBAC assignments",
+                "7. Wait 5-10 minutes for RBAC propagation, then re-test"
+            ]
+        },
+        "quota": {
+            "title": "Quota / Rate Limit Runbook",
+            "steps": [
+                "1. Identify which quota or rate limit was exceeded from the error message",
+                "2. Check Azure subscription quotas (Azure Portal > Subscription > Usage + quotas)",
+                "3. Reduce pipeline concurrency settings",
+                "4. Stagger pipeline schedules to reduce resource contention",
+                "5. Implement retry with exponential backoff for API-based sources",
+                "6. Request a quota increase if the current limit is insufficient",
+                "7. Consider using a dedicated integration runtime for high-volume pipelines"
+            ]
+        }
+    }
+}

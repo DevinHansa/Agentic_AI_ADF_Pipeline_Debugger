@@ -1,0 +1,15 @@
+{
+    "name": "pl_test_bad_url",
+    "properties": {
+        "activities": [
+            {
+                "name": "test_invalid_url",
+                "type": "WebActivity",
+                "typeProperties": {
+                    "url": "https://httpstat.us/500",
+                    "method": "GET"
+                }
+            }
+        ]
+    }
+}

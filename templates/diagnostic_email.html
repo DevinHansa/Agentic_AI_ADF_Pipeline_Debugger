@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ADF Pipeline Failure Report</title>
+</head>
+<body style="margin: 0; padding: 0; background-color: #0f1117; font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif; color: #e4e6eb;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #0f1117;">
+        <tr>
+            <td align="center" style="padding: 20px 10px;">
+                <table role="presentation" width="680" cellspacing="0" cellpadding="0" style="max-width: 680px; width: 100%;">
+
+                    <!-- HEADER -->
+                    <tr>
+                        <td style="background: linear-gradient(135deg, #dc2626, #991b1b); border-radius: 12px 12px 0 0; padding: 28px 32px;">
+                            <table width="100%" cellspacing="0" cellpadding="0">
+                                <tr>
+                                    <td>
+                                        <h1 style="margin: 0 0 8px 0; font-size: 22px; font-weight: 700; color: #ffffff;">
+                                            {{ severity_emoji }} Pipeline Failure Alert
+                                        </h1>
+                                        <p style="margin: 0; font-size: 14px; color: rgba(255,255,255,0.85);">
+                                            {{ factory_name }} &bull; {{ resource_group }}
+                                        </p>
+                                    </td>
+                                    <td align="right" valign="top">
+                                        <span style="display: inline-block; background: rgba(255,255,255,0.2); color: #fff; padding: 6px 16px; border-radius: 20px; font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px;">
+                                            {{ analysis.severity | upper }}
+                                        </span>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <!-- PIPELINE SUMMARY -->
+                    <tr>
+                        <td style="background-color: #1a1d27; padding: 24px 32px; border-bottom: 1px solid #2d3141;">
+                            <h2 style="margin: 0 0 16px 0; font-size: 18px; color: #f0f1f4;">
+                                📋 Pipeline Summary
+                            </h2>
+                            <table width="100%" cellspacing="0" cellpadding="0">
+                                <tr>
+                                    <td width="50%" style="padding: 6px 0;">
+                                        <span style="color: #8b8fa3; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Pipeline</span><br>
+                                        <span style="color: #f0f1f4; font-size: 15px; font-weight: 600;">{{ analysis.pipeline_name }}</span>
+                                    </td>
+                                    <td width="50%" style="padding: 6px 0;">
+                                        <span style="color: #8b8fa3; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Run ID</span><br>
+                                        <span style="color: #a5a9bc; font-size: 13px; font-family: 'Consolas', monospace;">{{ analysis.run_id }}</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 6px 0;">
+                                        <span style="color: #8b8fa3; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Failed At</span><br>
+                                        <span style="color: #f0f1f4; font-size: 14px;">{{ analysis.run_start | format_timestamp }}</span>
+                                    </td>
+                                    <td style="padding: 6px 0;">
+                                        <span style="color: #8b8fa3; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Duration</span><br>
+                                        <span style="color: #f0f1f4; font-size: 14px;">{{ analysis.duration_ms | format_duration }}</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 6px 0;">
+                                        <span style="color: #8b8fa3; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Failing Activity</span><br>
+                                        <span style="color: #fb923c; font-size: 14px; font-weight: 600;">{{ analysis.failing_activity }}</span>
+                                    </td>
+                                    <td style="padding: 6px 0;">
+                                        <span style="color: #8b8fa3; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Activity Type</span><br>
+                                        <span style="color: #f0f1f4; font-size: 14px;">{{ analysis.failing_activity_type }}</span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td style="padding: 6px 0;">
+                                        <span style="color: #8b8fa3; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Category</span><br>
+                                        <span style="color: #f0f1f4; font-size: 14px;">{{ category_emoji }} {{ analysis.category | capitalize }}</span>
+                                    </td>
+                                    <td style="padding: 6px 0;">
+                                        <span style="color: #8b8fa3; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px;">Activities</span><br>
+                                        <span style="color: #f0f1f4; font-size: 14px;">
+                                            {{ analysis.succeeded_activities_count }} ✅ / {{ analysis.failed_activities | length }} ❌ / {{ analysis.total_activities }} total
+                                        </span>
+                                    </td>
+                                </tr>
+                            </table>
+                        </td>
+                    </tr>
+
+                    <!-- ERROR EXPLANATION -->
+                    <tr>
+                        <td style="background-color: #1a1d27; padding: 24px 32px; border-bottom: 1px solid #2d3141;">
+                            <h2 style="margin: 0 0 12px 0; font-size: 18px; color: #f0f1f4;">
+                                🔴 What Went Wrong
+                            </h2>
+                            <div style="background-color: #1e2233; border-left: 4px solid #dc2626; padding: 16px 20px; border-radius: 0 8px 8px 0; margin-bottom: 16px;">
+                                <p style="margin: 0; font-size: 15px; line-height: 1.6; color: #e4e6eb;">
+                                    {{ analysis.plain_english_error }}
+                                </p>
+                            </div>
+
+                            <details style="margin-top: 12px;">
+                                <summary style="color: #8b8fa3; font-size: 13px; cursor: pointer;">View raw error message</summary>
+                                <div style="background-color: #12141d; padding: 12px 16px; border-radius: 6px; margin-top: 8px; overflow-x: auto;">
+                                    <code style="font-family: 'Consolas', 'Courier New', monospace; font-size: 12px; color: #f87171; white-space: pre-wrap; word-break: break-all;">{{ analysis.raw_error_message }}</code>
+                                </div>
+                            </details>
+                        </td>
+                    </tr>
+
+                    <!-- ROOT CAUSE -->
+                    <tr>
+                        <td style="background-color: #1a1d27; padding: 24px 32px; border-bottom: 1px solid #2d3141;">
+                            <h2 style="margin: 0 0 12px 0; font-size: 18px; color: #f0f1f4;">
+                                🔍 Root Cause Analysis
+                            </h2>
+                            <div style="background-color: #1e2233; border-left: 4px solid #f59e0b; padding: 16px 20px; border-radius: 0 8px 8px 0;">
+                                <p style="margin: 0; font-size: 14px; line-height: 1.6; color: #e4e6eb;">
+                                    {{ analysis.root_cause }}
+                                </p>
+                            </div>
+                        </td>
+                    </tr>
+
+                    <!-- SUGGESTED SOLUTIONS -->
+                    <tr>
+                        <td style="background-color: #1a1d27; padding: 24px 32px; border-bottom: 1px solid #2d3141;">
+                            <h2 style="margin: 0 0 16px 0; font-size: 18px; color: #f0f1f4;">
+                                💡 Suggested Solutions
+                            </h2>
+                            {% for solution in analysis.solutions %}
+                            <div style="background-color: #1e2233; border-radius: 8px; padding: 16px 20px; margin-bottom: 12px; border: 1px solid #2d3141;">
+                                <table width="100%" cellspacing="0" cellpadding="0">
+                                    <tr>
+                                        <td>
+                                            <h3 style="margin: 0 0 8px 0; font-size: 15px; color: #22c55e;">
+                                                {{ loop.index }}. {{ solution.title }}
+                                            </h3>
+                                        </td>
+                                        <td align="right" valign="top">
+                                            <span style="font-size: 12px; color: #8b8fa3;">
+                                                ⏱️ {{ solution.estimated_time | default('N/A') }}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                </table>
+                                <table width="100%" cellspacing="0" cellpadding="0">
+                                    {% for step in solution.steps %}
+                                    <tr>
+                                        <td style="padding: 4px 0 4px 16px; font-size: 13px; color: #c4c7d4; line-height: 1.5;">
+                                            → {{ step }}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </table>
+                                {% if solution.likelihood %}
+                                <p style="margin: 8px 0 0; font-size: 12px; color: #8b8fa3;">
+                                    Likelihood of fixing: <strong style="color: {% if solution.likelihood == 'high' %}#22c55e{% elif solution.likelihood == 'medium' %}#f59e0b{% else %}#8b8fa3{% endif %}">{{ solution.likelihood | upper }}</strong>
+                                </p>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+
+                            {% if analysis.known_solutions %}
+                            <div style="background-color: #1e2233; border-radius: 8px; padding: 16px 20px; margin-top: 12px; border: 1px solid #2d3141;">
+                                <h3 style="margin: 0 0 10px 0; font-size: 14px; color: #a78bfa;">📚 Additional Known Solutions</h3>
+                                {% for sol in analysis.known_solutions %}
+                                <p style="margin: 4px 0; font-size: 13px; color: #c4c7d4; padding-left: 12px;">• {{ sol }}</p>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </td>
+                    </tr>
+
+                    <!-- RUNBOOK -->
+                    {% if analysis.runbook %}
+                    <tr>
+                        <td style="background-color: #1a1d27; padding: 24px 32px; border-bottom: 1px solid #2d3141;">
+                            <h2 style="margin: 0 0 12px 0; font-size: 18px; color: #f0f1f4;">
+                                📖 Resolution Runbook: {{ analysis.runbook.title }}
+                            </h2>
+                            <div style="background-color: #1e2233; border-radius: 8px; padding: 16px 20px; border: 1px solid #2d3141;">
+                                {% for step in analysis.runbook.steps %}
+                                <p style="margin: 6px 0; font-size: 13px; color: #c4c7d4; line-height: 1.5;">{{ step }}</p>
+                                {% endfor %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endif %}
+
+                    <!-- DATA QUALITY CHECKS -->
+                    {% if quality_checks and quality_checks.checks_performed %}
+                    <tr>
+                        <td style="background-color: #1a1d27; padding: 24px 32px; border-bottom: 1px solid #2d3141;">
+                            <h2 style="margin: 0 0 16px 0; font-size: 18px; color: #f0f1f4;">
+                                📊 Data Quality Checks
+                            </h2>
+                            {% for check in quality_checks.checks_performed %}
+                            <div style="background-color: #1e2233; border-radius: 8px; padding: 12px 16px; margin-bottom: 8px; border-left: 3px solid {% if check.status == 'passed' %}#22c55e{% elif check.status == 'warning' %}#f59e0b{% else %}#3b82f6{% endif %};">
+                                <table width="100%" cellspacing="0" cellpadding="0">
+                                    <tr>
+                                        <td>
+                                            <span style="font-size: 14px; font-weight: 600; color: #e4e6eb;">{{ check.name }}</span>
+                                        </td>
+                                        <td align="right">
+                                            <span style="font-size: 12px; padding: 3px 10px; border-radius: 12px; background: {% if check.status == 'passed' %}rgba(34,197,94,0.15){% elif check.status == 'warning' %}rgba(245,158,11,0.15){% else %}rgba(59,130,246,0.15){% endif %}; color: {% if check.status == 'passed' %}#22c55e{% elif check.status == 'warning' %}#f59e0b{% else %}#3b82f6{% endif %};">
+                                                {{ check.status | upper }}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                </table>
+                                {% for issue in check.issues %}
+                                <p style="margin: 6px 0 0; font-size: 12px; color: #a5a9bc; padding-left: 8px;">⚠️ {{ issue }}</p>
+                                {% endfor %}
+                            </div>
+                            {% endfor %}
+
+                            {% if quality_checks.recommendations %}
+                            <div style="margin-top: 12px; padding: 12px 16px; background-color: #1e2233; border-radius: 8px;">
+                                <p style="margin: 0 0 8px; font-size: 13px; font-weight: 600; color: #a78bfa;">💡 Recommendations</p>
+                                {% for rec in quality_checks.recommendations %}
+                                <p style="margin: 4px 0; font-size: 12px; color: #c4c7d4; padding-left: 8px;">• {{ rec }}</p>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endif %}
+
+                    <!-- PIPELINE HISTORY -->
+                    {% if pipeline_history %}
+                    <tr>
+                        <td style="background-color: #1a1d27; padding: 24px 32px; border-bottom: 1px solid #2d3141;">
+                            <h2 style="margin: 0 0 16px 0; font-size: 18px; color: #f0f1f4;">
+                                📈 Recent Pipeline History
+                            </h2>
+                            <table width="100%" cellspacing="0" cellpadding="0" style="background-color: #1e2233; border-radius: 8px; overflow: hidden;">
+                                <tr style="background-color: #252938;">
+                                    <td style="padding: 10px 16px; font-size: 12px; color: #8b8fa3; text-transform: uppercase; letter-spacing: 0.5px;">Status</td>
+                                    <td style="padding: 10px 16px; font-size: 12px; color: #8b8fa3; text-transform: uppercase; letter-spacing: 0.5px;">Start Time</td>
+                                    <td style="padding: 10px 16px; font-size: 12px; color: #8b8fa3; text-transform: uppercase; letter-spacing: 0.5px;">Duration</td>
+                                </tr>
+                                {% for run in pipeline_history %}
+                                <tr style="border-bottom: 1px solid #2d3141;">
+                                    <td style="padding: 10px 16px; font-size: 13px;">{{ run.status_icon }} {{ run.status }}</td>
+                                    <td style="padding: 10px 16px; font-size: 13px; color: #a5a9bc;">{{ run.start }}</td>
+                                    <td style="padding: 10px 16px; font-size: 13px; color: #a5a9bc;">{{ run.duration }}</td>
+                                </tr>
+                                {% endfor %}
+                            </table>
+                        </td>
+                    </tr>
+                    {% endif %}
+
+                    <!-- PREVENTIVE MEASURES -->
+                    {% if analysis.preventive_measures %}
+                    <tr>
+                        <td style="background-color: #1a1d27; padding: 24px 32px; border-bottom: 1px solid #2d3141;">
+                            <h2 style="margin: 0 0 12px 0; font-size: 18px; color: #f0f1f4;">
+                                🛡️ Preventive Measures
+                            </h2>
+                            <div style="background-color: #1e2233; border-radius: 8px; padding: 16px 20px;">
+                                {% for measure in analysis.preventive_measures %}
+                                <p style="margin: 6px 0; font-size: 13px; color: #c4c7d4;">✓ {{ measure }}</p>
+                                {% endfor %}
+                            </div>
+                        </td>
+                    </tr>
+                    {% endif %}
+
+                    <!-- QUICK LINKS -->
+                    <tr>
+                        <td style="background-color: #1a1d27; padding: 24px 32px; border-bottom: 1px solid #2d3141;">
+                            <h2 style="margin: 0 0 16px 0; font-size: 18px; color: #f0f1f4;">
+                                🔗 Quick Links
+                            </h2>
+                            <table width="100%" cellspacing="0" cellpadding="0">
+                                <tr>
+                                    <td width="50%" style="padding: 6px 4px;">
+                                        <a href="{{ portal_url }}" style="display: block; background-color: #2563eb; color: #ffffff; text-align: center; padding: 12px 16px; border-radius: 8px; text-decoration: none; font-size: 13px; font-weight: 600;">
+                                            🖥️ Open in ADF Monitor
+                                        </a>
+                                    </td>
+                                    <td width="50%" style="padding: 6px 4px;">
+                                        <a href="https://portal.azure.com/#view/Microsoft_Azure_Health/AzureHealthBrowseBlade" style="display: block; background-color: #1e2233; color: #e4e6eb; text-align: center; padding: 12px 16px; border-radius: 8px; text-decoration: none; font-size: 13px; font-weight: 600; border: 1px solid #2d3141;">
+                                            🏥 Azure Service Health
+                                        </a>
+                                    </td>
+                                </tr>
+                            </table>
+
+                            {% if analysis.documentation_links %}
+                            <div style="margin-top: 12px;">
+                                <p style="font-size: 13px; color: #8b8fa3; margin: 0 0 8px 0;">📚 Related Documentation:</p>
+                                {% for doc in analysis.documentation_links %}
+                                <a href="{{ doc.url }}" style="display: inline-block; font-size: 12px; color: #60a5fa; text-decoration: none; margin: 2px 0; padding: 2px 0;">
+                                    → {{ doc.title }}
+                                </a><br>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </td>
+                    </tr>
+
+                    <!-- FOOTER -->
+                    <tr>
+                        <td style="background-color: #12141d; border-radius: 0 0 12px 12px; padding: 20px 32px; text-align: center;">
+                            <p style="margin: 0 0 4px; font-size: 12px; color: #6b6f82;">
+                                Generated by <strong style="color: #a78bfa;">ADF Pipeline Debugger</strong>
+                            </p>
+                            <p style="margin: 0; font-size: 11px; color: #4a4e5e;">
+                                {{ generated_at | format_timestamp }}
+                            </p>
+                        </td>
+                    </tr>
+
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+</html>

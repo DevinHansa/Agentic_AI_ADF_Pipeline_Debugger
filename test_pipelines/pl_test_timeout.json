@@ -1,0 +1,32 @@
+{
+    "name": "pl_test_timeout",
+    "properties": {
+        "activities": [
+            {
+                "name": "test_timeout",
+                "type": "Wait",
+                "typeProperties": {
+                    "waitTimeInSeconds": 1
+                },
+                "dependsOn": []
+            },
+            {
+                "name": "call_slow_endpoint",
+                "type": "WebActivity",
+                "dependsOn": [
+                    {
+                        "activity": "test_timeout",
+                        "dependencyConditions": [
+                            "Succeeded"
+                        ]
+                    }
+                ],
+                "typeProperties": {
+                    "url": "https://httpstat.us/408",
+                    "method": "GET",
+                    "timeout": "00:00:10"
+                }
+            }
+        ]
+    }
+}

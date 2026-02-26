@@ -1,0 +1,15 @@
+{
+    "name": "pl_test_auth_fail",
+    "properties": {
+        "activities": [
+            {
+                "name": "test_bad_auth",
+                "type": "WebActivity",
+                "typeProperties": {
+                    "url": "https://management.azure.com/subscriptions?api-version=2022-09-01",
+                    "method": "GET"
+                }
+            }
+        ]
+    }
+}

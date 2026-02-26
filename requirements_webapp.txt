@@ -1,0 +1,9 @@
+gunicorn
+flask
+azure-identity
+azure-mgmt-datafactory
+azure-mgmt-monitor
+azure-mgmt-resource
+google-generativeai
+jinja2
+python-dotenv

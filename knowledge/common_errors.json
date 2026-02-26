@@ -1,0 +1,438 @@
+{
+    "errors": [
+        {
+            "id": "CONN_001",
+            "pattern": "(?i)(connection.*refused|cannot connect|connection.*timed out|unable to connect)",
+            "category": "connectivity",
+            "title": "Connection Refused / Timeout",
+            "description": "The pipeline cannot establish a connection to the data source or destination.",
+            "common_causes": [
+                "Source/destination server is down or unreachable",
+                "Firewall rules blocking the connection",
+                "Self-hosted Integration Runtime is offline",
+                "VNet/Private Endpoint misconfiguration",
+                "DNS resolution failure"
+            ],
+            "solutions": [
+                "Check if the source/destination server is running and accessible",
+                "Verify firewall rules allow traffic from ADF IP ranges or Integration Runtime",
+                "Check Self-hosted Integration Runtime status in ADF Monitor",
+                "Verify VNet and Private Endpoint configurations",
+                "Test connectivity using the Integration Runtime's diagnostic tool",
+                "Check DNS settings and network security groups (NSGs)"
+            ],
+            "severity": "high",
+            "estimated_fix_time": "15-30 minutes",
+            "docs": [
+                "https://learn.microsoft.com/en-us/azure/data-factory/self-hosted-integration-runtime-troubleshoot-guide"
+            ]
+        },
+        {
+            "id": "CONN_002",
+            "pattern": "(?i)(self.hosted.*integration.*runtime|SHIR.*offline|integration runtime.*not available|IR.*not.*respond)",
+            "category": "connectivity",
+            "title": "Self-hosted Integration Runtime Offline",
+            "description": "The Self-hosted Integration Runtime (SHIR) is not responding or has gone offline.",
+            "common_causes": [
+                "SHIR machine is powered off or restarted",
+                "SHIR service crashed or was stopped",
+                "Network connectivity between SHIR and ADF is broken",
+                "SHIR version is outdated and needs updating",
+                "Machine ran out of memory or disk space"
+            ],
+            "solutions": [
+                "RDP into the SHIR machine and check if the service is running",
+                "Restart the Integration Runtime service",
+                "Check Windows Event Viewer for crash logs",
+                "Verify outbound connectivity from SHIR to Azure Service Bus",
+                "Update the SHIR to the latest version",
+                "Check machine resources (CPU, memory, disk)"
+            ],
+            "severity": "critical",
+            "estimated_fix_time": "10-20 minutes",
+            "docs": [
+                "https://learn.microsoft.com/en-us/azure/data-factory/create-self-hosted-integration-runtime"
+            ]
+        },
+        {
+            "id": "AUTH_001",
+            "pattern": "(?i)(authentication.*failed|login.*failed|invalid.*credentials|access.*denied|unauthorized|401)",
+            "category": "authentication",
+            "title": "Authentication Failure",
+            "description": "The pipeline failed to authenticate with the data source or destination.",
+            "common_causes": [
+                "Credentials expired or rotated",
+                "Service Principal secret or certificate expired",
+                "Managed Identity not properly configured",
+                "Key Vault access policy missing",
+                "Password changed and linked service not updated"
+            ],
+            "solutions": [
+                "Check and update credentials in the linked service",
+                "Verify Service Principal secret/certificate has not expired",
+                "Ensure Managed Identity is enabled and has proper role assignments",
+                "Check Key Vault access policies if using Key Vault references",
+                "Test the linked service connection in ADF Author mode",
+                "Rotate credentials and update all references"
+            ],
+            "severity": "high",
+            "estimated_fix_time": "10-30 minutes",
+            "docs": [
+                "https://learn.microsoft.com/en-us/azure/data-factory/store-credentials-in-key-vault"
+            ]
+        },
+        {
+            "id": "AUTH_002",
+            "pattern": "(?i)(forbidden|403|insufficient.*privilege|permission.*denied|role.*assignment)",
+            "category": "permission",
+            "title": "Permission Denied / Forbidden",
+            "description": "The pipeline has valid credentials but lacks the necessary permissions.",
+            "common_causes": [
+                "Missing RBAC role assignment on the resource",
+                "Storage Account access tier or permissions changed",
+                "SQL Database user permissions revoked",
+                "Key Vault access policies insufficient",
+                "Network access rules blocking managed identity"
+            ],
+            "solutions": [
+                "Verify RBAC role assignments for the ADF Managed Identity",
+                "Grant required roles (e.g., Storage Blob Data Contributor)",
+                "Check SQL Database user permissions and grant required access",
+                "Update Key Vault access policies",
+                "Add ADF to trusted services or firewall exceptions"
+            ],
+            "severity": "high",
+            "estimated_fix_time": "15-30 minutes",
+            "docs": [
+                "https://learn.microsoft.com/en-us/azure/data-factory/connector-troubleshoot-guide"
+            ]
+        },
+        {
+            "id": "DATA_001",
+            "pattern": "(?i)(column.*not found|invalid column|schema.*mismatch|mapping.*error|column.*does not exist)",
+            "category": "schema",
+            "title": "Schema Mismatch / Column Not Found",
+            "description": "The data schema at source or destination has changed, causing a mismatch with the pipeline mapping.",
+            "common_causes": [
+                "Source table schema was modified (columns added/removed/renamed)",
+                "Destination table schema differs from the pipeline mapping",
+                "Column mapping in the copy activity is outdated",
+                "Data type changes in the source system",
+                "Upstream pipeline modified the intermediate data format"
+            ],
+            "solutions": [
+                "Compare current source schema with the pipeline's column mapping",
+                "Import the updated schema in the ADF dataset",
+                "Update the column mapping in the Copy/Data Flow activity",
+                "Check if upstream systems made breaking schema changes",
+                "Add schema drift handling in Data Flows",
+                "Set up schema change alerts or validation steps"
+            ],
+            "severity": "medium",
+            "estimated_fix_time": "15-45 minutes",
+            "docs": [
+                "https://learn.microsoft.com/en-us/azure/data-factory/copy-activity-schema-and-type-mapping"
+            ]
+        },
+        {
+            "id": "DATA_002",
+            "pattern": "(?i)(data type.*mismatch|conversion.*failed|cannot convert|cast.*error|type.*incompatible|truncat)",
+            "category": "data_quality",
+            "title": "Data Type Conversion Error",
+            "description": "Data cannot be converted between source and destination types.",
+            "common_causes": [
+                "Null values in non-nullable columns",
+                "String data in numeric columns",
+                "Date format mismatch between systems",
+                "Overflow when converting between numeric types",
+                "Unicode/encoding issues with text data",
+                "Data truncation due to column length mismatch"
+            ],
+            "solutions": [
+                "Check source data for unexpected null or malformed values",
+                "Add explicit type mapping in the copy activity",
+                "Use Data Flow transformations for type conversion",
+                "Increase destination column sizes if truncation occurs",
+                "Add data validation activities before the failing copy",
+                "Use fault tolerance settings to skip incompatible rows"
+            ],
+            "severity": "medium",
+            "estimated_fix_time": "20-60 minutes",
+            "docs": [
+                "https://learn.microsoft.com/en-us/azure/data-factory/copy-activity-fault-tolerance"
+            ]
+        },
+        {
+            "id": "DATA_003",
+            "pattern": "(?i)(file.*not found|blob.*not found|path.*does not exist|container.*not found|404|no data)",
+            "category": "missing_data",
+            "title": "File / Data Not Found",
+            "description": "The expected source file or data does not exist at the specified location.",
+            "common_causes": [
+                "Source file not yet available (upstream delay)",
+                "File path uses dynamic expressions that resolved incorrectly",
+                "File was deleted or moved before the pipeline ran",
+                "Storage container or folder structure changed",
+                "Tumbling window or schedule misalignment with data availability"
+            ],
+            "solutions": [
+                "Check if the source file/data actually exists at the expected path",
+                "Validate dynamic path expressions (use Debug mode to see resolved paths)",
+                "Add a Validation activity or GetMetadata activity before the copy",
+                "Implement retry logic with appropriate delays",
+                "Check upstream pipeline completion times",
+                "Add a Until/Wait loop to wait for file availability"
+            ],
+            "severity": "medium",
+            "estimated_fix_time": "10-30 minutes",
+            "docs": [
+                "https://learn.microsoft.com/en-us/azure/data-factory/control-flow-validation-activity"
+            ]
+        },
+        {
+            "id": "TIMEOUT_001",
+            "pattern": "(?i)(timeout|timed out|operation.*exceeded.*time|execution.*time.*limit|long running)",
+            "category": "timeout",
+            "title": "Operation Timeout",
+            "description": "The pipeline activity exceeded its configured or default timeout limit.",
+            "common_causes": [
+                "Query or operation takes longer than the timeout setting",
+                "Large data volume overwhelming the source system",
+                "Resource constraints on the source/destination",
+                "Network latency between ADF and the data source",
+                "Deadlocks or blocking queries on the database",
+                "Inefficient SQL queries without proper indexing"
+            ],
+            "solutions": [
+                "Increase the activity timeout setting (default is often 7 days but source timeout may be shorter)",
+                "Optimize the SQL query (add indexes, reduce data volume)",
+                "Implement incremental/partitioned data loading",
+                "Check source system for long-running queries or deadlocks",
+                "Scale up the Integration Runtime or source/destination resources",
+                "Use parallel copy settings for large data transfers"
+            ],
+            "severity": "medium",
+            "estimated_fix_time": "30-60 minutes",
+            "docs": [
+                "https://learn.microsoft.com/en-us/azure/data-factory/copy-activity-performance"
+            ]
+        },
+        {
+            "id": "RESOURCE_001",
+            "pattern": "(?i)(out of memory|memory.*insufficient|oom|memory.*limit|heap.*space)",
+            "category": "resource",
+            "title": "Out of Memory",
+            "description": "The activity ran out of memory during execution.",
+            "common_causes": [
+                "Data volume too large for the allocated compute",
+                "Data Flow with insufficient cluster size",
+                "Complex transformations consuming excessive memory",
+                "Memory leak in custom activities",
+                "Too many concurrent activities on SHIR"
+            ],
+            "solutions": [
+                "Increase Data Flow cluster size (more cores/memory)",
+                "Optimize Data Flow transformations (reduce columns, add filters early)",
+                "Partition large data transfers",
+                "Scale up the Self-hosted Integration Runtime machine",
+                "Reduce concurrent activity execution limits",
+                "Use staging area for large copy operations"
+            ],
+            "severity": "high",
+            "estimated_fix_time": "30-60 minutes",
+            "docs": [
+                "https://learn.microsoft.com/en-us/azure/data-factory/concepts-data-flow-performance"
+            ]
+        },
+        {
+            "id": "RESOURCE_002",
+            "pattern": "(?i)(quota.*exceeded|limit.*exceeded|too many.*request|throttl|429|rate.*limit)",
+            "category": "quota",
+            "title": "Quota / Rate Limit Exceeded",
+            "description": "The pipeline exceeded Azure resource quotas or API rate limits.",
+            "common_causes": [
+                "Too many concurrent pipeline runs",
+                "API rate limits on source/destination services",
+                "Azure subscription quota limits reached",
+                "Storage IOPS or throughput limits exceeded",
+                "Too many concurrent connections to a database"
+            ],
+            "solutions": [
+                "Reduce concurrency settings in copy activities",
+                "Implement retry with exponential backoff",
+                "Stagger pipeline schedules to reduce overlap",
+                "Request Azure subscription quota increase",
+                "Use batch processing instead of individual API calls",
+                "Optimize DIU (Data Integration Units) allocation"
+            ],
+            "severity": "medium",
+            "estimated_fix_time": "15-45 minutes",
+            "docs": [
+                "https://learn.microsoft.com/en-us/azure/data-factory/data-factory-service-limits"
+            ]
+        },
+        {
+            "id": "CONFIG_001",
+            "pattern": "(?i)(invalid.*parameter|incorrect.*configuration|parameter.*missing|expression.*error|invalid.*expression)",
+            "category": "configuration",
+            "title": "Configuration / Parameter Error",
+            "description": "Pipeline parameters or activity configuration is invalid.",
+            "common_causes": [
+                "Dynamic expression syntax errors",
+                "Missing required pipeline parameters",
+                "Incorrect linked service configuration",
+                "Environment-specific configuration mismatch",
+                "Parameter type mismatch"
+            ],
+            "solutions": [
+                "Review and fix the dynamic expression syntax",
+                "Ensure all required parameters have valid default values",
+                "Test linked service connections in ADF Author mode",
+                "Compare configuration between environments (dev/staging/prod)",
+                "Use Debug mode to test parameter resolution"
+            ],
+            "severity": "medium",
+            "estimated_fix_time": "10-20 minutes",
+            "docs": [
+                "https://learn.microsoft.com/en-us/azure/data-factory/control-flow-expression-language-functions"
+            ]
+        },
+        {
+            "id": "SQL_001",
+            "pattern": "(?i)(deadlock|sql.*error|database.*error|stored procedure.*fail|transaction.*abort)",
+            "category": "data_quality",
+            "title": "SQL / Database Error",
+            "description": "A database operation failed during pipeline execution.",
+            "common_causes": [
+                "SQL deadlock with concurrent processes",
+                "Stored procedure error or logic failure",
+                "Database connection pool exhaustion",
+                "Table lock contention",
+                "Transaction log full",
+                "Incorrect SQL syntax in dynamic queries"
+            ],
+            "solutions": [
+                "Check for deadlocks in the database error logs",
+                "Review and fix stored procedure logic",
+                "Implement retry logic for transient database errors",
+                "Optimize query to reduce lock contention",
+                "Increase connection pool size or reduce concurrency",
+                "Check transaction log space and shrink if needed"
+            ],
+            "severity": "high",
+            "estimated_fix_time": "30-60 minutes",
+            "docs": [
+                "https://learn.microsoft.com/en-us/azure/data-factory/connector-azure-sql-database"
+            ]
+        },
+        {
+            "id": "FORMAT_001",
+            "pattern": "(?i)(json.*parse|xml.*parse|csv.*parse|parsing.*error|malformed|corrupt.*file|invalid.*format)",
+            "category": "data_quality",
+            "title": "File Format / Parsing Error",
+            "description": "The source data file cannot be parsed due to format issues.",
+            "common_causes": [
+                "Corrupted or incomplete source file",
+                "CSV delimiter mismatch",
+                "JSON/XML structural errors",
+                "Encoding mismatch (UTF-8 vs ANSI)",
+                "File generated with different format than expected",
+                "Header row mismatch or extra/missing columns"
+            ],
+            "solutions": [
+                "Inspect the source file for format issues",
+                "Verify CSV delimiter, quote character, and escape settings",
+                "Check file encoding and convert if necessary",
+                "Add fault tolerance to skip bad rows",
+                "Validate file format before processing (use GetMetadata activity)",
+                "Contact upstream system if the file format changed"
+            ],
+            "severity": "medium",
+            "estimated_fix_time": "15-45 minutes",
+            "docs": [
+                "https://learn.microsoft.com/en-us/azure/data-factory/supported-file-formats-and-compression-codecs"
+            ]
+        },
+        {
+            "id": "SPARK_001",
+            "pattern": "(?i)(spark.*error|databricks.*error|cluster.*terminat|job.*fail.*cluster|notebook.*fail)",
+            "category": "resource",
+            "title": "Spark / Databricks Cluster Error",
+            "description": "A Spark-based activity (Databricks notebook, Data Flow) failed due to cluster issues.",
+            "common_causes": [
+                "Cluster failed to start (capacity issues in the region)",
+                "Cluster auto-terminated due to inactivity",
+                "Notebook execution error",
+                "Driver node out of memory",
+                "Library installation failure",
+                "Databricks workspace quota exceeded"
+            ],
+            "solutions": [
+                "Check Databricks workspace for cluster status and logs",
+                "Review notebook execution output for detailed error",
+                "Increase cluster auto-termination timeout",
+                "Scale up cluster driver/worker nodes",
+                "Check regional capacity and try a different region",
+                "Verify library dependencies are correctly installed"
+            ],
+            "severity": "high",
+            "estimated_fix_time": "20-45 minutes",
+            "docs": [
+                "https://learn.microsoft.com/en-us/azure/data-factory/transform-data-using-databricks-notebook"
+            ]
+        },
+        {
+            "id": "COPY_001",
+            "pattern": "(?i)(copy.*fail|sink.*error|source.*error|staging.*error|polybase.*error)",
+            "category": "data_quality",
+            "title": "Copy Activity Failure",
+            "description": "The Copy activity failed during data transfer.",
+            "common_causes": [
+                "Source data has more columns than destination",
+                "Destination table does not exist",
+                "Primary key / unique constraint violation",
+                "Sink write method incompatible with table structure",
+                "PolyBase staging configuration error"
+            ],
+            "solutions": [
+                "Check source and destination schema compatibility",
+                "Ensure destination table exists with correct schema",
+                "Handle duplicate keys with upsert or pre-delete logic",
+                "Switch between PolyBase, COPY command, and bulk insert methods",
+                "Check staging storage account permissions if using PolyBase",
+                "Enable detailed logging on the copy activity"
+            ],
+            "severity": "medium",
+            "estimated_fix_time": "20-40 minutes",
+            "docs": [
+                "https://learn.microsoft.com/en-us/azure/data-factory/copy-activity-overview"
+            ]
+        },
+        {
+            "id": "TRIGGER_001",
+            "pattern": "(?i)(trigger.*fail|schedule.*error|tumbling.*window.*error|event.*trigger.*fail)",
+            "category": "configuration",
+            "title": "Trigger Failure",
+            "description": "The pipeline trigger failed to fire or execute properly.",
+            "common_causes": [
+                "Trigger is stopped or disabled",
+                "Storage event trigger misconfigured",
+                "Tumbling window dependency not met",
+                "Schedule expression error",
+                "Too many concurrent trigger runs"
+            ],
+            "solutions": [
+                "Check trigger status in ADF Monitor",
+                "Verify event trigger filters and paths",
+                "Check tumbling window dependencies",
+                "Validate CRON expression for schedule triggers",
+                "Re-start the trigger after fixing configuration"
+            ],
+            "severity": "medium",
+            "estimated_fix_time": "10-20 minutes",
+            "docs": [
+                "https://learn.microsoft.com/en-us/azure/data-factory/concepts-pipeline-execution-triggers"
+            ]
+        }
+    ]
+}

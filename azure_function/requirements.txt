@@ -1,0 +1,7 @@
+azure-functions
+azure-identity
+azure-mgmt-datafactory
+azure-mgmt-monitor
+google-generativeai
+jinja2
+python-dotenv
