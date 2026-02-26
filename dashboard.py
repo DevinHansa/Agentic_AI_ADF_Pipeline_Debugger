@@ -9,17 +9,39 @@ from pathlib import Path
 from datetime import datetime, timezone, timedelta
 
 from flask import Flask, render_template_string, jsonify, request
+from azure.mgmt.datafactory.models import RunQueryFilterOperand, RunQueryFilterOperator, RunFilterParameters
 
 # Add project root to path
 sys.path.insert(0, str(Path(__file__).parent))
 
-import config
+import config as app_config # Rename to avoid conflict with the new config object
 from adf_debugger.utils import setup_logging, format_duration, format_timestamp, time_ago, severity_emoji, error_category_emoji
+from adf_debugger.adf_client import ADFClient
 from adf_debugger.knowledge_base import KnowledgeBase
+from adf_debugger.vector_knowledge_base import VectorKnowledgeBase
 from adf_debugger.error_analyzer import ErrorAnalyzer
 from adf_debugger.data_quality import DataQualityChecker
 from adf_debugger.report_builder import ReportBuilder
 from adf_debugger.notification import NotificationService
+from config import get_config
+
+# Initialize components
+config = get_config()
+adf_client = ADFClient(
+    subscription_id=config.azure.SUBSCRIPTION_ID,
+    resource_group=config.azure.RESOURCE_GROUP,
+    factory_name=config.azure.DATA_FACTORY_NAME,
+    tenant_id=config.azure.TENANT_ID,
+    client_id=config.azure.CLIENT_ID,
+    client_secret=config.azure.CLIENT_SECRET,
+)
+knowledge_base = KnowledgeBase()
+try:
+    vector_kb = VectorKnowledgeBase()
+    vector_kb_available = True
+except Exception as e:
+    vector_kb_available = False
+    print(f"Warning: Vector KB not available: {e}")
 
 logger = setup_logging(config.app.LOG_LEVEL)
 
@@ -65,7 +87,7 @@ DASHBOARD_HTML = """
             font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
             background: var(--bg-primary);
             color: var(--text-primary);
-            min-height: 100vh;
+            min-height: 10vh;
             line-height: 1.5;
         }
 
@@ -598,6 +620,7 @@ DASHBOARD_HTML = """
         // ===== STATE =====
         let allKBEntries = [];
         let analyzedCount = 0;
+        let vectorKbAvailable = {{ 'true' if vector_kb_available else 'false' }};
 
         // ===== TAB SWITCHING =====
         function switchTab(tabId) {
@@ -787,9 +810,17 @@ DASHBOARD_HTML = """
             try {
                 const resp = await fetch('/api/knowledge-base');
                 const data = await resp.json();
-                allKBEntries = data.errors || [];
-                document.getElementById('statKB').textContent = allKBEntries.length;
-                renderKB(allKBEntries);
+                
+                if (vectorKbAvailable) {
+                    allKBEntries = data.entries || [];
+                    document.getElementById('statKB').textContent = allKBEntries.length;
+                    renderKB(allKBEntries);
+                } else {
+                    // Legacy KB structure
+                    allKBEntries = [...(data.errors || []), ...(data.runbooks || [])];
+                    document.getElementById('statKB').textContent = allKBEntries.length;
+                    renderKB(allKBEntries);
+                }
             } catch (err) {
                 console.error('Failed to load KB:', err);
             }
@@ -799,22 +830,36 @@ DASHBOARD_HTML = """
             const grid = document.getElementById('kbGrid');
             grid.innerHTML = entries.map(e => `
                 <div class="kb-card">
-                    <div class="kb-title">${e.title}</div>
-                    <div class="kb-desc">${e.description}</div>
-                    <span class="kb-category">${e.category}</span>
-                    <span class="badge badge-${e.severity}" style="margin-left:6px">${e.severity}</span>
+                    <div class="kb-title">${e.title || e.name}</div>
+                    <div class="kb-desc">${e.description || e.summary}</div>
+                    <span class="kb-category">${e.category || 'General'}</span>
+                    ${e.severity ? `<span class="badge badge-${e.severity.toLowerCase()}" style="margin-left:6px">${e.severity}</span>` : ''}
                 </div>
             `).join('');
         }
 
         function filterKB() {
             const query = document.getElementById('kbSearch').value.toLowerCase();
-            const filtered = allKBEntries.filter(e =>
-                e.title.toLowerCase().includes(query) ||
-                e.description.toLowerCase().includes(query) ||
-                e.category.toLowerCase().includes(query)
-            );
-            renderKB(filtered);
+            
+            if (vectorKbAvailable && query.length > 2) { // Only use vector search for longer queries
+                fetch(`/api/vector-search?q=${encodeURIComponent(query)}`)
+                    .then(res => res.json())
+                    .then(data => {
+                        if (data.matches) {
+                            renderKB(data.matches.map(m => m.metadata));
+                        }
+                    })
+                    .catch(err => console.error('Vector search failed:', err));
+            } else {
+                const filtered = allKBEntries.filter(e =>
+                    (e.title && e.title.toLowerCase().includes(query)) ||
+                    (e.name && e.name.toLowerCase().includes(query)) ||
+                    (e.description && e.description.toLowerCase().includes(query)) ||
+                    (e.summary && e.summary.toLowerCase().includes(query)) ||
+                    (e.category && e.category.toLowerCase().includes(query))
+                );
+                renderKB(filtered);
+            }
         }
 
         // ===== CHECK CONNECTION =====
@@ -887,6 +932,7 @@ def dashboard():
         factory_name=config.azure.DATA_FACTORY_NAME or "Not configured",
         resource_group=config.azure.RESOURCE_GROUP or "Not configured",
         lookback_hours=config.app.LOOKBACK_HOURS,
+        vector_kb_available=vector_kb_available,
     )
 
 
@@ -894,16 +940,7 @@ def dashboard():
 def api_status():
     """Check ADF connection status."""
     try:
-        from adf_debugger.adf_client import ADFClient
-        client = ADFClient(
-            subscription_id=config.azure.SUBSCRIPTION_ID,
-            resource_group=config.azure.RESOURCE_GROUP,
-            factory_name=config.azure.DATA_FACTORY_NAME,
-            tenant_id=config.azure.TENANT_ID,
-            client_id=config.azure.CLIENT_ID,
-            client_secret=config.azure.CLIENT_SECRET,
-        )
-        result = client.test_connection()
+        result = adf_client.test_connection()
         return jsonify(result)
     except Exception as e:
         return jsonify({"connected": False, "error": str(e)})
@@ -913,17 +950,8 @@ def api_status():
 def api_failures():
     """Get recent pipeline failures."""
     try:
-        from adf_debugger.adf_client import ADFClient
-        client = ADFClient(
-            subscription_id=config.azure.SUBSCRIPTION_ID,
-            resource_group=config.azure.RESOURCE_GROUP,
-            factory_name=config.azure.DATA_FACTORY_NAME,
-            tenant_id=config.azure.TENANT_ID,
-            client_id=config.azure.CLIENT_ID,
-            client_secret=config.azure.CLIENT_SECRET,
-        )
         hours = request.args.get("hours", config.app.LOOKBACK_HOURS, type=int)
-        runs = client.get_failed_pipeline_runs(hours_back=hours)
+        runs = adf_client.get_failed_pipeline_runs(hours_back=hours)
 
         failures = []
         for run in runs:
@@ -945,19 +973,9 @@ def api_failures():
 def api_analyze(run_id):
     """Run full analysis on a pipeline run."""
     try:
-        from adf_debugger.adf_client import ADFClient
-        client = ADFClient(
-            subscription_id=config.azure.SUBSCRIPTION_ID,
-            resource_group=config.azure.RESOURCE_GROUP,
-            factory_name=config.azure.DATA_FACTORY_NAME,
-            tenant_id=config.azure.TENANT_ID,
-            client_id=config.azure.CLIENT_ID,
-            client_secret=config.azure.CLIENT_SECRET,
-        )
-
-        error_details = client.get_error_details(run_id)
+        error_details = adf_client.get_error_details(run_id)
         analyzer = ErrorAnalyzer(api_key=config.gemini.API_KEY, model=config.gemini.MODEL)
-        quality_checker = DataQualityChecker(adf_client=client)
+        quality_checker = DataQualityChecker(adf_client=adf_client)
 
         analysis = analyzer.analyze(error_details)
         quality_checks = quality_checker.run_checks(error_details)
@@ -998,14 +1016,91 @@ def api_quick_analyze():
         return jsonify({"error": str(e)})
 
 
-@app.route("/api/knowledge-base")
+@app.route('/api/knowledge-base', methods=['GET'])
 def api_knowledge_base():
-    """Get all knowledge base entries."""
+    """API endpoint to get the knowledge base entries."""
+    if vector_kb_available:
+        stats = vector_kb.get_stats()
+        entries = vector_kb.get_all_entries()
+        return jsonify({
+            'stats': stats,
+            'entries': entries,
+            'source': 'Vector KB (ChromaDB)'
+        })
+    else:
+        return jsonify({
+            'errors': knowledge_base.common_errors,
+            'runbooks': knowledge_base.runbooks,
+            'source': 'Legacy Regex KB'
+        })
+
+@app.route('/api/vector-search', methods=['GET'])
+def api_vector_search():
+    """API endpoint to perform semantic search on error patterns."""
+    if not vector_kb_available:
+        return jsonify({'error': 'Vector search is not available'}), 503
+        
+    query = request.args.get('q', '')
+    if not query:
+        return jsonify({'error': 'Query parameter "q" is required'}), 400
+        
     try:
-        kb = KnowledgeBase()
-        return jsonify({"errors": kb.errors})
+        matches = vector_kb.search(query, n_results=5)
+        return jsonify({
+            'query': query,
+            'matches': matches
+        })
     except Exception as e:
-        return jsonify({"errors": [], "error": str(e)})
+        return jsonify({'error': str(e)}), 500
+
+@app.route('/api/pipeline-history', methods=['GET'])
+def api_pipeline_history():
+    """API endpoint to get historical success/failure trends."""
+    pipeline_name = request.args.get('pipeline')
+    hours = int(request.args.get('hours', 24))
+    
+    try:
+        end_time = datetime.utcnow()
+        start_time = end_time - timedelta(hours=hours)
+        
+        # Get all runs (not just failures)
+        filters = []
+        if pipeline_name:
+            filters.append(
+                RunQueryFilterOperand(
+                    operand="PipelineName", # Use string literal for operand
+                    operator="Equals", # Use string literal for operator
+                    values=[pipeline_name]
+                )
+            )
+            
+        run_filter = RunFilterParameters(
+            last_updated_after=start_time,
+            last_updated_before=end_time,
+            filters=filters if filters else None
+        )
+        
+        runs = adf_client.client.pipeline_runs.query_by_factory(
+            config.azure.RESOURCE_GROUP, # Use config.azure
+            config.azure.DATA_FACTORY_NAME, # Use config.azure
+            run_filter
+        )
+        
+        history = []
+        for run in runs.value:
+            history.append({
+                'run_id': run.run_id,
+                'pipeline_name': run.pipeline_name,
+                'status': run.status,
+                'start': run.run_start.isoformat() if run.run_start else None,
+                'end': run.run_end.isoformat() if run.run_end else None,
+                'duration_ms': run.duration_in_ms
+            })
+            
+        return jsonify({'history': history})
+        
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
 
 
 @app.route("/api/send-report/<run_id>", methods=["POST"])
