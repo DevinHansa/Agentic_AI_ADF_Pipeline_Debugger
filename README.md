@@ -29,32 +29,38 @@ This system automatically monitors, detects, analyzes, and explains ADF pipeline
 graph TD
     subgraph "Azure Environment"
         ADF[Azure Data Factory] --> |Failure Event| AM[Azure Monitor]
+        
+        %% Path 1: Logic App Agent (New)
+        AM --> |Webhook Alert| LA[Azure Logic App Agent]
+        
+        %% Path 2: Function App (Legacy)
         AM --> |Webhook Alert| Func[Azure Function App]
     end
 
-    subgraph "Agentic Diagnostic Engine"
+    subgraph "Agentic Diagnostic Engine (Tools)"
+        LA --> |Tool Call: /api/agent_search| WebApp[Python Web App API]
         Func --> CLI[ADF Debugger Core]
         CLI --> Analyzer[Error Analysis Pipeline]
         
         Analyzer --> |1. Pattern Match| KB1[(Regex KB)]
         Analyzer --> |2. Semantic Match| KB2[(Vector KB - ChromaDB)]
+        WebApp --> |Semantic Match| KB2
         Analyzer --> |3. Synthesize| LLM[Gemini AI]
         Analyzer --> |4. Verify| FactCheck[Fact-checker Node]
     end
 
     subgraph "Presentation Layer"
+        LA --> |Native Connector| Email[HTML Email Report]
         FactCheck --> Dash[Web Dashboard]
-        FactCheck --> Email[HTML Email Report]
+        FactCheck --> Email
         FactCheck --> Console[CLI / Terminal]
     end
 ```
 
-### The Analytical Workflow
-1. **Detection:** Azure Function triggers on ADF failure alerts.
-2. **Retrieval:** Extracts pipeline logs and compares them against Regex and Vector Knowledge Bases.
-3. **Generation:** Gemini AI synthesizes a root-cause explanation.
-4. **Verification:** The Fact-Checking node cross-references the AI's claim against the KB to mitigate hallucinations.
-5. **Distribution:** Formats and routes the report to engineers.
+### Two Orchestration Models
+
+1. **Azure Logic App Autonomous Agent (Recommended):** The Logic App uses an AI Agent loop (`gpt-4o`) to orchestrate the pipeline. It retrieves the error, dynamically calls the Python Web App's `/api/agent_search` endpoint (Vector Knowledge Base) as a custom tool, synthesizes a response, and emails the team using native Logic App connectors.
+2. **Python Function App (Standalone):** An Azure Function triggers on ADF failure alerts. It extracts pipeline logs, queries the local ChromaDB and Regex KBs, calls Gemini AI to synthesize an explanation, verifies it with a Fact-Checking Node, and routes an HTML report via SMTP.
 
 ---
 
