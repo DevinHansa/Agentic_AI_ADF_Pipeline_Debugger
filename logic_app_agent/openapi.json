@@ -1,0 +1,82 @@
+{
+    "openapi": "3.0.1",
+    "info": {
+        "title": "ADF Pipeline Debugger Knowledge Base API",
+        "description": "API for Azure Logic App Autonomous Agents to search historical Azure Data Factory errors and runbooks.",
+        "version": "1.0.0"
+    },
+    "servers": [
+        {
+            "url": "https://adf-debugger-dashboard.azurewebsites.net",
+            "description": "Production Azure App Service"
+        }
+    ],
+    "paths": {
+        "/api/agent_search": {
+            "post": {
+                "operationId": "SearchKnowledgeBase",
+                "summary": "Search the Vector Knowledge Base",
+                "description": "Searches ChromaDB for the most similar past ADF pipeline errors, root causes, and solutions based on a generic string query.",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "query": {
+                                        "type": "string",
+                                        "description": "The ADF error message or keywords to search for."
+                                    }
+                                },
+                                "required": [
+                                    "query"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "object",
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean"
+                                        },
+                                        "query": {
+                                            "type": "string"
+                                        },
+                                        "top_matches": {
+                                            "type": "array",
+                                            "items": {
+                                                "type": "object",
+                                                "properties": {
+                                                    "title": {
+                                                        "type": "string"
+                                                    },
+                                                    "description": {
+                                                        "type": "string"
+                                                    },
+                                                    "solution": {
+                                                        "type": "string"
+                                                    },
+                                                    "severity": {
+                                                        "type": "string"
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+}

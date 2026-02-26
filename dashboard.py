@@ -22,11 +22,13 @@ from adf_debugger.vector_knowledge_base import VectorKnowledgeBase
 from adf_debugger.error_analyzer import ErrorAnalyzer
 from adf_debugger.data_quality import DataQualityChecker
 from adf_debugger.report_builder import ReportBuilder
-from adf_debugger.notification import NotificationService
-from config import get_config
+import importlib.util
+spec = importlib.util.spec_from_file_location("config", str(Path(__file__).parent / "config.py"))
+config_module = importlib.util.module_from_spec(spec)
+spec.loader.exec_module(config_module)
 
 # Initialize components
-config = get_config()
+config = config_module
 adf_client = ADFClient(
     subscription_id=config.azure.SUBSCRIPTION_ID,
     resource_group=config.azure.RESOURCE_GROUP,
@@ -1052,6 +1054,46 @@ def api_vector_search():
         })
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+@app.route('/api/agent_search', methods=['POST'])
+def api_agent_search():
+    """Logic App AI Agent tool endpoint for semantic error search."""
+    if not vector_kb_available:
+        return jsonify({'error': 'Vector search is not available'}), 503
+    
+    data = request.json
+    if not data or 'query' not in data:
+        return jsonify({'error': 'Missing required "query" in JSON body'}), 400
+        
+    query = data['query']
+    try:
+        matches = vector_kb.search(query, n_results=3)
+        # matches is a list of dicts returning {"id": ..., "score": ..., "metadata": {...}}
+        results = []
+        for match in matches:
+            meta = match.get("metadata", {})
+            results.append({
+                "title": meta.get("title", "Unknown Error"),
+                "description": meta.get("description", "No description available"),
+                "solution": meta.get("solutions", meta.get("solution", "No solution provided")),
+                "severity": meta.get("severity", "medium"),
+            })
+        return jsonify({
+            'success': True,
+            'query': query,
+            'top_matches': results
+        })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+@app.route('/api/openapi.json', methods=['GET'])
+def api_openapi_json():
+    """Serve the OpenAPI specification for Logic App Autonomous Agents."""
+    spec_path = Path(__file__).parent / "logic_app_agent" / "openapi.json"
+    if spec_path.exists():
+        with open(spec_path, "r", encoding="utf-8") as f:
+            return jsonify(json.load(f))
+    return jsonify({"error": "openapi.json not found"}), 404
 
 @app.route('/api/pipeline-history', methods=['GET'])
 def api_pipeline_history():
